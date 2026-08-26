@@ -283,15 +283,25 @@ export default {
         if (isGameOver(buildValueGrid(this.tiles))) this.showOver = true
       }, MOVE_MS)
     },
-    onTouchStart(e) { const t = e.touches[0]; this.touchX = t.pageX; this.touchY = t.pageY },
+    onTouchStart(e) {
+      const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0])
+      if (!t) return
+      this.touchX = t.pageX; this.touchY = t.pageY
+    },
     onTouchEnd(e) {
-      const t = e.changedTouches[0]
-      const dx = t.pageX - this.touchX, dy = t.pageY - this.touchY
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return
-      if (Math.abs(dx) > Math.abs(dy)) this.move(dx > 0 ? 'right' : 'left')
+      const t = (e.changedTouches && e.changedTouches[0]) || (e.touches && e.touches[0])
+      if (!t) return
+      const dx = t.pageX - this.touchX
+      const dy = t.pageY - this.touchY
+      const absX = Math.abs(dx), absY = Math.abs(dy)
+      if (Math.max(absX, absY) < 20) return
+      if (absX > absY) this.move(dx > 0 ? 'right' : 'left')
       else this.move(dy > 0 ? 'down' : 'up')
     },
-    onSwipe(e) { this.move(e.direction) },
+    onSwipe(e) {
+      let dir = e.direction
+      if (dir === 'up' || dir === 'down' || dir === 'left' || dir === 'right') this.move(dir)
+    },
     continueGame() { this.showWin = false }
   }
 }
