@@ -1,0 +1,6 @@
+*.amr
+.falcon_/
+.falcon_tmp/
+node_modules/
+dist/
+.DS_Store
