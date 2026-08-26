@@ -79,7 +79,6 @@
 </template>
 <script>
 import { SIZE, performMove, buildValueGrid, isGameOver } from '@/game/logic.js'
-const BEST_KEY = '2048_best_score'
 const MOVE_MS = 120
 const TILE_THEME = {
   2: { bg: '#eee4da', color: '#776e65' },
@@ -125,24 +124,6 @@ function computeLayout() {
   const middleW = 125
   return { vw, vh, pad, gap, middleW, dpadW, boardOuter, boardInner, boardPad, cellGap, cellSize, dpadBtn }
 }
-function loadBest() {
-  try {
-    if (typeof $falcon !== 'undefined' && $falcon.storage) {
-      const v = $falcon.storage.getItem(BEST_KEY)
-      if (v) return parseInt(v, 10) || 0
-    }
-    return parseInt(localStorage.getItem(BEST_KEY), 10) || 0
-  } catch (e) { return 0 }
-}
-function saveBest(v) {
-  try {
-    const s = String(v)
-    if (typeof $falcon !== 'undefined' && $falcon.storage) {
-      $falcon.storage.setItem(BEST_KEY, s)
-    }
-    localStorage.setItem(BEST_KEY, s)
-  } catch (e) {}
-}
 export default {
   data() {
     return {
@@ -151,7 +132,7 @@ export default {
       tiles: [],
       nextId: 1,
       score: 0,
-      best: loadBest(),
+      best: 0,
       lastGain: 0,
       showGain: false,
       scorePulse: false,
@@ -280,7 +261,7 @@ export default {
         this.scorePulse = true
         setTimeout(() => { this.showGain = false; this.scorePulse = false }, 700)
       }
-      if (this.score > this.best) { this.best = this.score; saveBest(this.best) }
+      if (this.score > this.best) this.best = this.score
       this.tiles.forEach(t => { t.isNew = false; t.isMerged = res.mergedIds.includes(t.id) })
       setTimeout(() => {
         this.tiles = this.tiles.filter(t => !res.removedIds.includes(t.id))
@@ -292,7 +273,11 @@ export default {
         if (isGameOver(buildValueGrid(this.tiles))) this.showOver = true
       }, MOVE_MS)
     },
-    onTouchStart(e) { const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]); if (!t) return; this.touchX = t.pageX; this.touchY = t.pageY },
+    onTouchStart(e) {
+      const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0])
+      if (!t) return
+      this.touchX = t.pageX; this.touchY = t.pageY
+    },
     onTouchEnd(e) {
       const t = (e.changedTouches && e.changedTouches[0]) || (e.touches && e.touches[0])
       if (!t) return
