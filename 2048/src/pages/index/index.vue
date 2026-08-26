@@ -28,7 +28,7 @@
           <text class="score-value">{{ best }}</text>
         </div>
         <div class="reset-btn" @click="initBoard" :style="resetBtnStyle">
-          <text class="reset-text">NEW</text>
+          <text class="reset-text">新游戏</text>
         </div>
       </div>
       <div class="dpad-col" :style="dpadColStyle">
@@ -203,7 +203,6 @@ export default {
     initBoard() {
       this.tiles = []
       this.score = 0
-      this.best = loadBest()
       this.showWin = this.showOver = this.locked = this.winNotified = false
       this.addTile(true)
       this.addTile(true)
@@ -283,25 +282,17 @@ export default {
         if (isGameOver(buildValueGrid(this.tiles))) this.showOver = true
       }, MOVE_MS)
     },
-    onTouchStart(e) {
-      const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0])
-      if (!t) return
-      this.touchX = t.pageX; this.touchY = t.pageY
-    },
+    onTouchStart(e) { const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]); if (!t) return; this.touchX = t.pageX; this.touchY = t.pageY },
     onTouchEnd(e) {
       const t = (e.changedTouches && e.changedTouches[0]) || (e.touches && e.touches[0])
       if (!t) return
-      const dx = t.pageX - this.touchX
-      const dy = t.pageY - this.touchY
+      const dx = t.pageX - this.touchX, dy = t.pageY - this.touchY
       const absX = Math.abs(dx), absY = Math.abs(dy)
       if (Math.max(absX, absY) < 20) return
       if (absX > absY) this.move(dx > 0 ? 'right' : 'left')
       else this.move(dy > 0 ? 'down' : 'up')
     },
-    onSwipe(e) {
-      let dir = e.direction
-      if (dir === 'up' || dir === 'down' || dir === 'left' || dir === 'right') this.move(dir)
-    },
+    onSwipe(e) { let dir = e.direction; if (dir === 'up' || dir === 'down' || dir === 'left' || dir === 'right') this.move(dir) },
     continueGame() { this.showWin = false }
   }
 }
