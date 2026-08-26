@@ -59,11 +59,21 @@
         </div>
       </div>
     </div>
-    <div v-if="showWin" class="modal" @click="continueGame">
-      <div class="modal-box"><text class="modal-msg">WIN!</text></div>
+    <div v-if="showWin" class="modal">
+      <div class="modal-box">
+        <text class="modal-msg">YOU WIN!</text>
+        <div class="reset-btn" @click="continueGame" :style="resetBtnStyle" style="margin-top:8px">
+          <text class="reset-text">继续</text>
+        </div>
+      </div>
     </div>
-    <div v-if="showOver" class="modal" @click="initBoard">
-      <div class="modal-box"><text class="modal-msg">OVER</text></div>
+    <div v-if="showOver" class="modal">
+      <div class="modal-box">
+        <text class="modal-msg">Game Over !</text>
+        <div class="reset-btn" @click="initBoard" :style="resetBtnStyle" style="margin-top:8px">
+          <text class="reset-text">新游戏</text>
+        </div>
+      </div>
     </div>
   </div>
 </template>
