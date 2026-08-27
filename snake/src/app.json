@@ -1,11 +1,17 @@
 {
   "pages": {
-    "index": "pages/index/index.vue",
-    "page": "pages/page/page.vue"
+    "index": "pages/index/index.vue"
+  },
+  "window": {
+    "defaultTitle": "贪吃蛇",
+    "designWidth": 172,
+    "width": 172,
+    "height": 640,
+    "backgroundColor": "#081310"
   },
   "options": {
-      "style": {
-          "lessPaths": ["styles"]
-      }
+    "style": {
+      "lessPaths": ["styles"]
+    }
   }
 }

@@ -1,63 +1,50 @@
 <template>
-  <div class="app-container">
+  <div class="app">
     <div class="header">
-      <div class="score-card">
-        <text class="label">当前分数</text>
-        <text class="value">{{ score }}</text>
+      <div class="card">
+        <text class="lab">分数</text>
+        <text class="val">{{ score }}</text>
       </div>
-      <div class="score-card">
-        <text class="label">最高纪录</text>
-        <text class="value">{{ bestScore }}</text>
+      <div class="card">
+        <text class="lab">最高</text>
+        <text class="val">{{ bestScore }}</text>
       </div>
     </div>
 
     <div class="stage">
-      <div class="canvas-frame">
-        <canvas ref="gameCanvas" class="canvas" @touchstart="onCanvasTouch"></canvas>
-        <div v-if="gameState !== 'playing'" class="overlay" @touchstart="onOverlayTouch">
-          <text v-if="gameState === 'idle'" class="ov-btn">开始游戏</text>
-          <text v-if="gameState === 'paused'" class="ov-title">已暂停</text>
-          <text v-if="gameState === 'gameover'" class="ov-title">游戏结束</text>
-          <text v-if="gameState === 'gameover'" class="ov-score">得分: {{ score }}</text>
-          <text v-if="gameState !== 'idle'" class="ov-btn">继续游戏</text>
+      <canvas ref="gameCanvas" class="canvas" @touchstart="onCanvas"></canvas>
+      <div v-if="gameState !== 'playing'" class="overlay" @touchstart="onCanvas">
+        <text v-if="gameState === 'idle'" class="msg">开始游戏</text>
+        <text v-if="gameState === 'paused'" class="msg">已暂停</text>
+        <div v-if="gameState === 'gameover'" class="over-box">
+          <text class="msg">游戏结束</text>
+          <text class="final">得分: {{ score }}</text>
+          <text class="btn-txt">再来一局</text>
         </div>
       </div>
     </div>
 
     <div class="dpad">
-      <div class="dpad-row">
-        <div class="dpad-btn" @touchstart="changeDir(0, -1)">
-          <text class="dpad-icon">↑</text>
-        </div>
+      <div class="row">
+        <div class="btn" @touchstart="go(0, -1)"><text class="ic">↑</text></div>
       </div>
-      <div class="dpad-row">
-        <div class="dpad-btn" @touchstart="changeDir(-1, 0)">
-          <text class="dpad-icon">←</text>
-        </div>
-        <div class="dpad-btn empty"></div>
-        <div class="dpad-btn" @touchstart="changeDir(1, 0)">
-          <text class="dpad-icon">→</text>
-        </div>
+      <div class="row">
+        <div class="btn" @touchstart="go(-1, 0)"><text class="ic">←</text></div>
+        <div class="btn empty"></div>
+        <div class="btn" @touchstart="go(1, 0)"><text class="ic">→</text></div>
       </div>
-      <div class="dpad-row">
-        <div class="dpad-btn" @touchstart="changeDir(0, 1)">
-          <text class="dpad-icon">↓</text>
-        </div>
+      <div class="row">
+        <div class="btn" @touchstart="go(0, 1)"><text class="ic">↓</text></div>
       </div>
     </div>
 
     <div class="footer">
-      <div class="speed-selector">
-        <text
-          v-for="s in speeds"
-          :key="s.value"
-          :class="['speed-btn', moveInterval === s.value ? 'active' : '']"
-          @touchstart="setSpeed(s.value)"
-        >{{ s.label }}</text>
+      <div class="speed-row">
+        <text v-for="s in speeds" :key="s.v" :class="[moveInterval === s.v ? 'active-s' : 's-btn']" @touchstart="setS(s.v)">{{ s.l }}</text>
       </div>
-      <div class="btn-group">
-        <text class="btn primary" @touchstart="startGame">{{ gameState === 'idle' ? '开始' : '重来' }}</text>
-        <text class="btn secondary" @touchstart="togglePause">{{ gameState === 'paused' ? '继续' : '暂停' }}</text>
+      <div class="act-row">
+        <text class="act" @touchstart="pause">{{ gameState === 'paused' ? '继续' : '暂停' }}</text>
+        <text class="act" @touchstart="startGame">重置</text>
       </div>
     </div>
   </div>
@@ -67,362 +54,170 @@
 export default {
   data() {
     return {
-      gameState: 'idle',
-      score: 0,
-      bestScore: 0,
-      moveInterval: 130,
-      speeds: [
-        { label: '慢速', value: 180 },
-        { label: '正常', value: 130 },
-        { label: '快速', value: 90 },
-        { label: '极速', value: 60 }
-      ],
-      cols: 16,
-      rows: 16,
-      snake: [],
-      prevSnake: [],
-      dir: { x: 1, y: 0 },
-      nextDir: { x: 1, y: 0 },
-      food: null,
-      particles: [],
-      lastMoveTime: 0,
-      canvasSize: 160,
-      ctx: null,
-      bestScoresMap: {},
-      isLooping: false
+      gameState: 'idle', score: 0, bestScore: 0, moveInterval: 130,
+      speeds: [{l:'慢',v:180}, {l:'常',v:130}, {l:'快',v:90}, {l:'极',v:60}],
+      cols: 16, rows: 16, snake: [], prevSnake: [], dir: {x:1,y:0}, nextDir: {x:1,y:0},
+      food: null, particles: [], lastMoveTime: 0, canvasSize: 160, ctx: null, bestScoresMap: {}
     }
   },
   methods: {
     onShow() {
-      this.initCanvas();
-      this.loadBestScores();
-      this.updateBestDisplay();
-      if (!this.isLooping) {
-        this.isLooping = true;
-        this.loop();
-      }
+      this.init();
+      this.load();
+      this.updateB();
+      this.loop();
     },
-    initCanvas() {
-      const canvas = this.$refs.gameCanvas;
-      if (!canvas) return;
-      this.ctx = canvas.getContext('2d');
-      canvas.width = this.canvasSize;
-      canvas.height = this.canvasSize;
+    init() {
+      const c = this.$refs.gameCanvas;
+      this.ctx = c.getContext('2d');
+      c.width = this.canvasSize;
+      c.height = this.canvasSize;
     },
-    loadBestScores() {
+    load() {
       try {
-        const val = localStorage.getItem('snakeBestScores');
-        this.bestScoresMap = val ? JSON.parse(val) : {};
-      } catch (e) {
-        this.bestScoresMap = {};
-      }
+        const v = localStorage.getItem('snakeBestScores');
+        this.bestScoresMap = v ? JSON.parse(v) : {};
+      } catch (e) { this.bestScoresMap = {}; }
     },
-    updateBestDisplay() {
-      this.bestScore = this.bestScoresMap[this.moveInterval] || 0;
-    },
-    saveBestScore() {
+    updateB() { this.bestScore = this.bestScoresMap[this.moveInterval] || 0; },
+    save() {
       if (this.score > (this.bestScoresMap[this.moveInterval] || 0)) {
         this.bestScoresMap[this.moveInterval] = this.score;
-        try {
-          localStorage.setItem('snakeBestScores', JSON.stringify(this.bestScoresMap));
-        } catch(e) {}
-        this.updateBestDisplay();
+        try { localStorage.setItem('snakeBestScores', JSON.stringify(this.bestScoresMap)); } catch(e) {}
+        this.updateB();
       }
     },
     startGame() {
-      const startX = Math.floor(this.cols / 4);
-      const startY = Math.floor(this.rows / 2);
-      this.snake = [{ x: startX + 2, y: startY }, { x: startX + 1, y: startY }, { x: startX, y: startY }];
+      const sx = Math.floor(this.cols / 4);
+      const sy = Math.floor(this.rows / 2);
+      this.snake = [{x:sx+2, y:sy}, {x:sx+1, y:sy}, {x:sx, y:sy}];
       this.prevSnake = JSON.parse(JSON.stringify(this.snake));
-      this.dir = { x: 1, y: 0 };
-      this.nextDir = { x: 1, y: 0 };
-      this.score = 0;
-      this.particles = [];
-      this.spawnFood();
+      this.dir = {x:1, y:0}; this.nextDir = {x:1, y:0};
+      this.score = 0; this.particles = [];
+      this.spawn();
       this.lastMoveTime = performance.now();
       this.gameState = 'playing';
     },
-    resumeGame() {
-      this.gameState = 'playing';
-      this.lastMoveTime = performance.now();
-    },
-    togglePause() {
+    pause() {
       if (this.gameState === 'playing') this.gameState = 'paused';
-      else if (this.gameState === 'paused') this.resumeGame();
+      else if (this.gameState === 'paused') { this.gameState = 'playing'; this.lastMoveTime = performance.now(); }
     },
-    setSpeed(val) {
-      if (this.gameState === 'playing') return;
-      this.moveInterval = val;
-      this.updateBestDisplay();
-    },
-    changeDir(x, y) {
+    setS(v) { if (this.gameState !== 'playing') { this.moveInterval = v; this.updateB(); } },
+    go(x, y) {
       if (this.gameState !== 'playing') return;
       if (x === -this.dir.x && y === -this.dir.y) return;
-      this.nextDir = { x, y };
+      this.nextDir = {x, y};
     },
-    spawnFood() {
-      const occupied = {};
-      this.snake.forEach(s => occupied[`${s.x},${s.y}`] = true);
-      const free = [];
-      for (let x = 0; x < this.cols; x++) {
-        for (let y = 0; y < this.rows; y++) {
-          if (!occupied[`${x},${y}`]) free.push({ x: x, y: y });
-        }
-      }
-      if (free.length === 0) {
-        this.endGame();
-        return;
-      }
-      this.food = free[Math.floor(Math.random() * free.length)];
+    spawn() {
+      const occ = {};
+      this.snake.forEach(s => occ[`${s.x},${s.y}`] = true);
+      const f = [];
+      for (let x=0; x<this.cols; x++) for (let y=0; y<this.rows; y++) if (!occ[`${x},${y}`]) f.push({x, y});
+      if (f.length === 0) { this.end(); return; }
+      this.food = f[Math.floor(Math.random() * f.length)];
     },
     step() {
       this.prevSnake = JSON.parse(JSON.stringify(this.snake));
       this.dir = this.nextDir;
-      const head = this.snake[0];
-      const newHead = { x: head.x + this.dir.x, y: head.y + this.dir.y };
-      if (newHead.x < 0 || newHead.x >= this.cols || newHead.y < 0 || newHead.y >= this.rows || this.snake.some(s => s.x === newHead.x && s.y === newHead.y)) {
-        this.endGame();
-        return;
+      const h = this.snake[0];
+      const nh = {x: h.x + this.dir.x, y: h.y + this.dir.y};
+      if (nh.x<0 || nh.x>=this.cols || nh.y<0 || nh.y>=this.rows || this.snake.some(s => s.x===nh.x && s.y===nh.y)) {
+        this.end(); return;
       }
-      this.snake.unshift(newHead);
-      if (this.food && newHead.x === this.food.x && newHead.y === this.food.y) {
-        this.score += 10;
-        this.spawnParticles(this.food.x, this.food.y);
-        this.spawnFood();
-      } else {
-        this.snake.pop();
-      }
+      this.snake.unshift(nh);
+      if (this.food && nh.x===this.food.x && nh.y===this.food.y) {
+        this.score += 10; this.part(this.food.x, this.food.y); this.spawn();
+      } else { this.snake.pop(); }
     },
-    endGame() {
-      this.saveBestScore();
-      this.gameState = 'gameover';
-    },
-    spawnParticles(x, y) {
-      const grid = this.canvasSize / this.cols;
-      for (let i = 0; i < 8; i++) {
-        const angle = (Math.PI * 2 / 8) * i + Math.random() * 0.5;
-        const speed = 1.4 + Math.random() * 2.6;
+    end() { this.save(); this.gameState = 'gameover'; },
+    part(x, y) {
+      const g = this.canvasSize / this.cols;
+      for (let i=0; i<8; i++) {
+        const a = (Math.PI*2/8)*i;
         this.particles.push({
-          x: x * grid + grid / 2,
-          y: y * grid + grid / 2,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          life: 1,
-          decay: 0.05,
-          size: 2
+          x: x*g+g/2, y: y*g+g/2, vx: Math.cos(a)*2, vy: Math.sin(a)*2,
+          life: 1, decay: 0.05
         });
       }
     },
-    updateParticles() {
-      for (let i = this.particles.length - 1; i >= 0; i--) {
-        const p = this.particles[i];
-        p.x += p.vx; p.y += p.vy; p.life -= p.decay;
-        if (p.life <= 0) this.particles.splice(i, 1);
-      }
-    },
     loop() {
-      const now = performance.now();
-      if (this.gameState === 'playing' && now - this.lastMoveTime >= this.moveInterval) {
-        this.step(); this.lastMoveTime = now;
+      const n = performance.now();
+      if (this.gameState === 'playing' && n - this.lastMoveTime >= this.moveInterval) {
+        this.step(); this.lastMoveTime = n;
       }
-      if (this.gameState === 'playing' || this.gameState === 'gameover') this.updateParticles();
-      this.draw(now);
+      for (let i=this.particles.length-1; i>=0; i--) {
+        const p = this.particles[i]; p.x+=p.vx; p.y+=p.vy; p.life-=p.decay;
+        if (p.life<=0) this.particles.splice(i, 1);
+      }
+      this.draw(n);
       requestAnimationFrame(() => this.loop());
     },
     draw(ts) {
       const ctx = this.ctx; if (!ctx) return;
-      const size = this.canvasSize; const grid = size / this.cols;
-      ctx.fillStyle = '#081310'; ctx.fillRect(0, 0, size, size);
-      ctx.strokeStyle = 'rgba(95,232,154,0.08)'; ctx.lineWidth = 0.5;
-      for (let i = 0; i <= this.cols; i++) {
-        ctx.beginPath(); ctx.moveTo(i * grid, 0); ctx.lineTo(i * grid, size); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, i * grid); ctx.lineTo(size, i * grid); ctx.stroke();
+      const s = this.canvasSize; const g = s / this.cols;
+      ctx.fillStyle = '#081310'; ctx.fillRect(0, 0, s, s);
+      ctx.strokeStyle = 'rgba(95,232,154,0.1)'; ctx.lineWidth = 0.5;
+      for (let i=0; i<=this.cols; i++) {
+        ctx.beginPath(); ctx.moveTo(i*g, 0); ctx.lineTo(i*g, s); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i*g); ctx.lineTo(s, i*g); ctx.stroke();
       }
       if (this.gameState !== 'idle') {
         if (this.food) {
           ctx.fillStyle = '#ff7a59';
-          const fPad = grid * 0.2;
-          this.drawRoundRect(this.food.x * grid + fPad, this.food.y * grid + fPad, grid - fPad * 2, grid - fPad * 2, 2);
-          ctx.fill();
+          const p = g * 0.2; this.rct(this.food.x*g+p, this.food.y*g+p, g-p*2, g-p*2, 2); ctx.fill();
         }
-        const t = this.gameState === 'playing' ? Math.min((ts - this.lastMoveTime) / this.moveInterval, 1) : 1;
-        const renderSnake = this.getInterpolatedSnake(t);
-        renderSnake.forEach((seg, i) => {
-          const ratio = renderSnake.length > 1 ? i / (renderSnake.length - 1) : 0;
-          ctx.fillStyle = this.mixColor('#5fe89a', '#155c3b', ratio);
-          const sPad = grid * 0.05;
-          this.drawRoundRect(seg.x * grid + sPad, seg.y * grid + sPad, grid - sPad * 2, grid - sPad * 2, 2);
-          ctx.fill();
+        const t = this.gameState === 'playing' ? Math.min((ts-this.lastMoveTime)/this.moveInterval, 1) : 1;
+        this.snake.map((curr, i) => {
+          const prev = i < this.prevSnake.length ? this.prevSnake[i] : this.prevSnake[this.prevSnake.length-1];
+          const rx = prev.x+(curr.x-prev.x)*t, ry = prev.y+(curr.y-prev.y)*t;
+          ctx.fillStyle = i===0 ? '#5fe89a' : '#155c3b';
+          const p = g * 0.1; this.rct(rx*g+p, ry*g+p, g-p*2, g-p*2, 2); ctx.fill();
         });
         this.particles.forEach(p => {
-          ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = '#ffcb80';
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = p.life; ctx.fillStyle = '#ffcb80';
+          ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill();
         });
         ctx.globalAlpha = 1;
       }
     },
-    getInterpolatedSnake(t) {
-      if (t >= 1 || this.prevSnake.length === 0) return this.snake;
-      return this.snake.map((curr, i) => {
-        const prev = i < this.prevSnake.length ? this.prevSnake[i] : this.prevSnake[this.prevSnake.length - 1];
-        return { x: prev.x + (curr.x - prev.x) * t, y: prev.y + (curr.y - prev.y) * t };
-      });
+    rct(x, y, w, h, r) {
+      this.ctx.beginPath(); this.ctx.moveTo(x+r, y); this.ctx.lineTo(x+w-r, y);
+      this.ctx.arcTo(x+w, y, x+w, y+r, r); this.ctx.lineTo(x+w, y+h-r);
+      this.ctx.arcTo(x+w, y+h, x+w-r, y+h, r); this.ctx.lineTo(x+r, y+h);
+      this.ctx.arcTo(x, y+h, x, y+h-r, r); this.ctx.lineTo(x, y+r);
+      this.ctx.arcTo(x, y, x+r, y, r); this.ctx.closePath();
     },
-    drawRoundRect(x, y, w, h, r) {
-      const ctx = this.ctx; ctx.beginPath();
-      ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
-      ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-      ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
-      ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r); ctx.closePath();
-    },
-    mixColor(c1, c2, r) {
-      const f1 = hex => ({ r: parseInt(hex.slice(1, 3), 16), g: parseInt(hex.slice(3, 5), 16), b: parseInt(hex.slice(5, 7), 16) });
-      const a = f1(c1), b = f1(c2);
-      return `rgb(${Math.round(a.r + (b.r - a.r) * r)}, ${Math.round(a.g + (b.g - a.g) * r)}, ${Math.round(a.b + (b.b - a.b) * r)})`;
-    },
-    onCanvasTouch() {
-      if (this.gameState === 'idle') this.startGame();
+    onCanvas() {
+      if (this.gameState === 'idle' || this.gameState === 'gameover') this.startGame();
       else if (this.gameState === 'playing') this.gameState = 'paused';
-      else if (this.gameState === 'paused') this.resumeGame();
-      else if (this.gameState === 'gameover') this.startGame();
-    },
-    onOverlayTouch() {
-      if (this.gameState === 'idle') this.startGame();
-      else if (this.gameState === 'paused') this.resumeGame();
-      else if (this.gameState === 'gameover') this.startGame();
+      else if (this.gameState === 'paused') { this.gameState = 'playing'; this.lastMoveTime = performance.now(); }
     }
   }
 }
 </script>
 
 <style scoped>
-.app-container {
-  width: 172px;
-  height: 640px;
-  background-color: #081310;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.header {
-  width: 172px;
-  padding: 15px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  border-bottom-width: 1px;
-  border-bottom-style: solid;
-  border-bottom-color: #1a2a24;
-}
-.score-card {
-  background-color: #11221c;
-  width: 140px;
-  padding: 5px 0;
-  margin: 2px 0;
-  border-radius: 8px;
-  border-width: 1px;
-  border-style: solid;
-  border-color: #5fe89a;
-  align-items: center;
-}
-.label {
-  color: #5fe89a;
-  font-size: 10px;
-}
-.value {
-  color: #fff;
-  font-size: 16px;
-  font-weight: bold;
-}
-.stage {
-  margin: 15px 0;
-  width: 160px;
-  height: 160px;
-  align-items: center;
-  justify-content: center;
-}
-.canvas-frame {
-  position: relative;
-  width: 160px;
-  height: 160px;
-  border-width: 2px;
-  border-style: solid;
-  border-color: #1a2a24;
-  border-radius: 8px;
-  overflow: hidden;
-}
-.canvas {
-  width: 160px;
-  height: 160px;
-}
-.overlay {
-  position: absolute;
-  top: 0; left: 0; width: 160px; height: 160px;
-  background-color: rgba(8, 19, 16, 0.9);
-  justify-content: center;
-  align-items: center;
-}
-.ov-title {
-  color: #fff; font-size: 18px; font-weight: bold; margin-bottom: 10px;
-}
-.ov-score {
-  color: #5fe89a; font-size: 14px; margin-bottom: 15px;
-}
-.ov-btn {
-  background-color: #5fe89a; color: #081310; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold;
-}
-.dpad {
-  margin-top: 10px;
-  align-items: center;
-}
-.dpad-row {
-  flex-direction: row;
-}
-.dpad-btn {
-  width: 45px;
-  height: 45px;
-  background-color: #1a2a24;
-  margin: 4px;
-  border-radius: 10px;
-  border-width: 1px;
-  border-style: solid;
-  border-color: #5fe89a;
-  justify-content: center;
-  align-items: center;
-}
-.empty {
-  background-color: transparent;
-  border-width: 0;
-}
-.dpad-icon {
-  color: #5fe89a; font-size: 20px; font-weight: bold;
-}
-.footer {
-  width: 172px;
-  flex: 1;
-  justify-content: flex-end;
-  align-items: center;
-  padding-bottom: 30px;
-}
-.speed-selector {
-  flex-direction: row; margin-bottom: 15px;
-}
-.speed-btn {
-  padding: 3px 6px; margin: 0 3px; background-color: #1a2a24; color: #555; font-size: 10px; border-radius: 4px;
-}
-.active {
-  background-color: #5fe89a; color: #081310;
-}
-.btn-group {
-  flex-direction: row;
-}
-.btn {
-  padding: 8px 16px; margin: 0 8px; border-radius: 20px; font-size: 12px; font-weight: bold;
-}
-.primary {
-  background-color: #5fe89a; color: #081310;
-}
-.secondary {
-  background-color: #1a2a24; color: #5fe89a; border-width: 1px; border-style: solid; border-color: #5fe89a;
-}
+.app { width: 172px; height: 640px; background-color: #081310; align-items: center; }
+.header { width: 172px; padding: 10px 0; align-items: center; border-bottom: 1px solid #1a2a24; }
+.card { background-color: #11221c; width: 150px; padding: 4px 0; margin: 2px 0; border-radius: 6px; border: 1px solid #5fe89a; align-items: center; }
+.lab { color: #5fe89a; font-size: 10px; }
+.val { color: #fff; font-size: 14px; font-weight: bold; }
+.stage { margin: 15px 0; width: 160px; height: 160px; position: relative; }
+.canvas { width: 160px; height: 160px; border: 1px solid #1a2a24; border-radius: 4px; }
+.overlay { position: absolute; top: 0; left: 0; width: 160px; height: 160px; background-color: rgba(8, 19, 16, 0.85); justify-content: center; align-items: center; }
+.msg { color: #fff; font-size: 16px; font-weight: bold; }
+.over-box { align-items: center; }
+.final { color: #5fe89a; font-size: 12px; margin: 5px 0; }
+.btn-txt { background-color: #5fe89a; color: #081310; padding: 4px 10px; border-radius: 4px; font-size: 10px; }
+.dpad { align-items: center; margin-top: 10px; }
+.row { flex-direction: row; }
+.btn { width: 42px; height: 42px; background-color: #1a2a24; margin: 3px; border-radius: 8px; border: 1px solid #5fe89a; justify-content: center; align-items: center; }
+.empty { background-color: transparent; border: 0; }
+.ic { color: #5fe89a; font-size: 18px; font-weight: bold; }
+.footer { width: 172px; flex: 1; justify-content: flex-end; align-items: center; padding-bottom: 20px; }
+.speed-row { flex-direction: row; margin-bottom: 10px; }
+.s-btn { padding: 2px 6px; margin: 0 2px; background-color: #1a2a24; color: #555; font-size: 10px; border-radius: 4px; }
+.active-s { padding: 2px 6px; margin: 0 2px; background-color: #5fe89a; color: #081310; font-size: 10px; border-radius: 4px; }
+.act-row { flex-direction: row; }
+.act { background-color: #333; color: #fff; padding: 6px 15px; margin: 0 5px; border-radius: 12px; font-size: 12px; }
 </style>

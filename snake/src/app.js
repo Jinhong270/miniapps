@@ -3,43 +3,16 @@ class App extends $falcon.App {
   constructor() {
     super()
   }
-
   onLaunch(options) {
     super.onLaunch(options)
     this.setViewPort(172)
     $falcon.useDefaultBasePageClass(BasePage)
   }
-
-  onShow() {
-    super.onShow()
-  }
-
-  onHide() {
-    super.onHide()
-  }
-
-  onDestroy() {
-    super.onDestroy()
-  }
 }
-
 try {
-  globalThis['window'] = {
-    requestAnimationFrame,
-    cancelAnimationFrame
-  }
-} catch (err) {
-  console.log(err)
-}
-
+  globalThis['window'] = { requestAnimationFrame, cancelAnimationFrame }
+} catch (err) {}
 try {
-  globalThis['process'] = {
-    env: {
-      NODE_ENV: 'production'
-    }
-  }
-} catch (err) {
-  console.log(err)
-}
-
+  globalThis['process'] = { env: { NODE_ENV: 'production' } }
+} catch (err) {}
 export default App
