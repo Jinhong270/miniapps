@@ -6,7 +6,7 @@ class App extends $falcon.App {
 
   onLaunch(options) {
     super.onLaunch(options)
-    this.setViewPort(750)
+    this.setViewPort(172)
     $falcon.useDefaultBasePageClass(BasePage)
   }
 

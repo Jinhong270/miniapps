@@ -1,17 +1,10 @@
 <template>
   <div class="app-container">
-    <div class="header">
-      <div class="score-card">
-        <text class="card-label">SCORE</text>
-        <text class="card-value">{{ score }}</text>
-      </div>
-      <div class="score-card">
-        <text class="card-label">BEST</text>
-        <text class="card-value">{{ bestScore }}</text>
-      </div>
+    <div class="score-bar">
+      <text class="score-txt">S:{{ score }} | B:{{ bestScore }}</text>
     </div>
 
-    <div class="game-area">
+    <div class="stage">
       <canvas ref="gameCanvas" class="canvas" @touchstart="onCanvasTouch"></canvas>
 
       <div v-if="gameState === 'idle'" class="overlay" @click="startGame">
@@ -20,7 +13,6 @@
 
       <div v-if="gameState === 'paused'" class="overlay" @click="resumeGame">
         <text class="overlay-title">PAUSED</text>
-        <text class="overlay-hint">Tap to Resume</text>
       </div>
 
       <div v-if="gameState === 'gameover'" class="overlay" @click="startGame">
@@ -30,42 +22,32 @@
       </div>
     </div>
 
-    <div class="control-section">
-      <div class="dpad">
-        <div class="dpad-row">
-          <div class="dpad-btn" @touchstart="changeDir(0, -1)">
-            <text class="arrow">▲</text>
-          </div>
-        </div>
-        <div class="dpad-row">
-          <div class="dpad-btn" @touchstart="changeDir(-1, 0)">
-            <text class="arrow">◀</text>
-          </div>
-          <div class="dpad-btn empty"></div>
-          <div class="dpad-btn" @touchstart="changeDir(1, 0)">
-            <text class="arrow">▶</text>
-          </div>
-        </div>
-        <div class="dpad-row">
-          <div class="dpad-btn" @touchstart="changeDir(0, 1)">
-            <text class="arrow">▼</text>
-          </div>
-        </div>
+    <div class="dpad">
+      <div class="dpad-row">
+        <div class="btn" @touchstart="changeDir(0, -1)"><text class="arrow">↑</text></div>
       </div>
+      <div class="dpad-row">
+        <div class="btn" @touchstart="changeDir(-1, 0)"><text class="arrow">←</text></div>
+        <div class="btn empty"></div>
+        <div class="btn" @touchstart="changeDir(1, 0)"><text class="arrow">→</text></div>
+      </div>
+      <div class="dpad-row">
+        <div class="btn" @touchstart="changeDir(0, 1)"><text class="arrow">↓</text></div>
+      </div>
+    </div>
 
-      <div class="settings">
-        <div class="speed-bar">
-          <text
-            v-for="s in speeds"
-            :key="s.value"
-            :class="['speed-item', moveInterval === s.value ? 'speed-item-active' : '']"
-            @click="setSpeed(s.value)"
-          >{{ s.label }}</text>
-        </div>
-        <div class="action-bar">
-          <text class="action-btn" @click="togglePause">{{ gameState === 'paused' ? 'RESUME' : 'PAUSE' }}</text>
-          <text class="action-btn" @click="startGame">RESET</text>
-        </div>
+    <div class="footer">
+      <div class="speed-row">
+        <text
+          v-for="s in speeds"
+          :key="s.value"
+          :class="['speed-item', moveInterval === s.value ? 'speed-active' : '']"
+          @click="setSpeed(s.value)"
+        >{{ s.label }}</text>
+      </div>
+      <div class="action-row">
+        <text class="act-btn" @click="togglePause">{{ gameState === 'paused' ? 'RES' : 'PAU' }}</text>
+        <text class="act-btn" @click="startGame">RST</text>
       </div>
     </div>
   </div>
@@ -94,7 +76,7 @@ export default {
       food: null,
       particles: [],
       lastMoveTime: 0,
-      canvasSize: 640,
+      canvasSize: 160,
       ctx: null,
       bestScoresMap: {},
       isLooping: false
@@ -112,6 +94,7 @@ export default {
     },
     initCanvas() {
       const canvas = this.$refs.gameCanvas;
+      if (!canvas) return;
       this.ctx = canvas.getContext('2d');
       canvas.width = this.canvasSize;
       canvas.height = this.canvasSize;
@@ -139,11 +122,7 @@ export default {
     startGame() {
       const startX = Math.floor(this.cols / 4);
       const startY = Math.floor(this.rows / 2);
-      this.snake = [
-        { x: startX + 2, y: startY },
-        { x: startX + 1, y: startY },
-        { x: startX, y: startY }
-      ];
+      this.snake = [{ x: startX + 2, y: startY }, { x: startX + 1, y: startY }, { x: startX, y: startY }];
       this.prevSnake = JSON.parse(JSON.stringify(this.snake));
       this.dir = { x: 1, y: 0 };
       this.nextDir = { x: 1, y: 0 };
@@ -177,7 +156,7 @@ export default {
       const free = [];
       for (let x = 0; x < this.cols; x++) {
         for (let y = 0; y < this.rows; y++) {
-          if (!occupied[`${x},${y}`]) free.push({ x, y });
+          if (!occupied[`${x},${y}`]) free.push({ x: x, y: y });
         }
       }
       if (free.length === 0) {
@@ -219,43 +198,32 @@ export default {
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
           life: 1,
-          decay: 0.03 + Math.random() * 0.03,
-          size: 4 + Math.random() * 4
+          decay: 0.05,
+          size: 2
         });
       }
     },
     updateParticles() {
       for (let i = this.particles.length - 1; i >= 0; i--) {
         const p = this.particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life -= p.decay;
+        p.x += p.vx; p.y += p.vy; p.life -= p.decay;
         if (p.life <= 0) this.particles.splice(i, 1);
       }
     },
     loop() {
       const now = performance.now();
-      if (this.gameState === 'playing') {
-        if (now - this.lastMoveTime >= this.moveInterval) {
-          this.step();
-          this.lastMoveTime = now;
-        }
+      if (this.gameState === 'playing' && now - this.lastMoveTime >= this.moveInterval) {
+        this.step(); this.lastMoveTime = now;
       }
-      if (this.gameState === 'playing' || this.gameState === 'gameover') {
-        this.updateParticles();
-      }
+      if (this.gameState === 'playing' || this.gameState === 'gameover') this.updateParticles();
       this.draw(now);
       requestAnimationFrame(() => this.loop());
     },
     draw(ts) {
-      const ctx = this.ctx;
-      if (!ctx) return;
-      const size = this.canvasSize;
-      const grid = size / this.cols;
-      ctx.fillStyle = '#0b0b0b';
-      ctx.fillRect(0, 0, size, size);
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-      ctx.lineWidth = 1;
+      const ctx = this.ctx; if (!ctx) return;
+      const size = this.canvasSize; const grid = size / this.cols;
+      ctx.fillStyle = '#0b0b0b'; ctx.fillRect(0, 0, size, size);
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 0.5;
       for (let i = 0; i <= this.cols; i++) {
         ctx.beginPath(); ctx.moveTo(i * grid, 0); ctx.lineTo(i * grid, size); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i * grid); ctx.lineTo(size, i * grid); ctx.stroke();
@@ -264,7 +232,7 @@ export default {
         if (this.food) {
           ctx.fillStyle = '#ff7a59';
           const fPad = grid * 0.2;
-          this.drawRoundRect(this.food.x * grid + fPad, this.food.y * grid + fPad, grid - fPad * 2, grid - fPad * 2, grid / 4);
+          this.drawRoundRect(this.food.x * grid + fPad, this.food.y * grid + fPad, grid - fPad * 2, grid - fPad * 2, 2);
           ctx.fill();
         }
         const t = this.gameState === 'playing' ? Math.min((ts - this.lastMoveTime) / this.moveInterval, 1) : 1;
@@ -272,13 +240,12 @@ export default {
         renderSnake.forEach((seg, i) => {
           const ratio = renderSnake.length > 1 ? i / (renderSnake.length - 1) : 0;
           ctx.fillStyle = this.mixColor('#5fe89a', '#155c3b', ratio);
-          const sPad = grid * 0.05;
-          this.drawRoundRect(seg.x * grid + sPad, seg.y * grid + sPad, grid - sPad * 2, grid - sPad * 2, grid / 4);
+          const sPad = grid * 0.1;
+          this.drawRoundRect(seg.x * grid + sPad, seg.y * grid + sPad, grid - sPad * 2, grid - sPad * 2, 2);
           ctx.fill();
         });
         this.particles.forEach(p => {
-          ctx.globalAlpha = Math.max(0, p.life);
-          ctx.fillStyle = '#ffcb80';
+          ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = '#ffcb80';
           ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
         });
         ctx.globalAlpha = 1;
@@ -292,18 +259,11 @@ export default {
       });
     },
     drawRoundRect(x, y, w, h, r) {
-      const ctx = this.ctx;
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.arcTo(x + w, y, x + w, y + r, r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-      ctx.lineTo(x + r, y + h);
-      ctx.arcTo(x, y + h, x, y + h - r, r);
-      ctx.lineTo(x, y + r);
-      ctx.arcTo(x, y, x + r, y, r);
-      ctx.closePath();
+      const ctx = this.ctx; ctx.beginPath();
+      ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+      ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+      ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r); ctx.closePath();
     },
     mixColor(c1, c2, r) {
       const f1 = hex => ({ r: parseInt(hex.slice(1, 3), 16), g: parseInt(hex.slice(3, 5), 16), b: parseInt(hex.slice(5, 7), 16) });
@@ -320,147 +280,93 @@ export default {
 }
 </script>
 
-<style lang="less" scoped>
+<style scoped>
 .app-container {
-  width: 750px;
+  width: 172px;
+  height: 640px;
   background-color: #000;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  padding-bottom: 100px;
 }
-.header {
-  width: 750px;
+.score-bar {
+  width: 172px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   align-items: center;
-  padding: 60px 0;
-  border-bottom-width: 2px;
+  border-bottom-width: 1px;
   border-bottom-style: solid;
   border-bottom-color: #222;
 }
-.score-card {
-  background-color: #1a1a1a;
-  padding: 30px;
-  border-radius: 20px;
-  width: 400px;
-  align-items: center;
-  margin-bottom: 20px;
-}
-.card-label {
-  font-size: 28px;
-  color: #666;
-  font-weight: bold;
-}
-.card-value {
-  font-size: 60px;
+.score-txt {
   color: #fff;
-  font-weight: 800;
-  margin-top: 10px;
+  font-size: 14px;
 }
-.game-area {
+.stage {
   position: relative;
-  width: 640px;
-  height: 640px;
-  margin: 60px 0;
-  border-width: 4px;
+  width: 160px;
+  height: 160px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  border-width: 1px;
   border-style: solid;
   border-color: #333;
-  border-radius: 24px;
-  overflow: hidden;
 }
 .canvas {
-  width: 640px;
-  height: 640px;
+  width: 160px;
+  height: 160px;
 }
 .overlay {
   position: absolute;
-  top: 0; left: 0; width: 640px; height: 640px;
-  background-color: rgba(0,0,0,0.85);
+  top: 0; left: 0; width: 160px; height: 160px;
+  background-color: rgba(0,0,0,0.8);
   justify-content: center;
   align-items: center;
 }
 .overlay-title {
-  color: #fff;
-  font-size: 80px;
-  font-weight: 900;
-  margin-bottom: 30px;
+  color: #fff; font-size: 20px;
 }
 .overlay-score {
-  color: #5fe89a;
-  font-size: 60px;
-  font-weight: 800;
-  margin-bottom: 50px;
+  color: #5fe89a; font-size: 16px;
 }
 .overlay-btn {
-  background-color: #5fe89a;
-  color: #000;
-  padding: 25px 60px;
-  border-radius: 16px;
-  font-size: 40px;
-  font-weight: 900;
-}
-.overlay-hint {
-  color: #555;
-  font-size: 28px;
-  margin-top: 30px;
-}
-.control-section {
-  width: 750px;
-  align-items: center;
+  background-color: #5fe89a; color: #000; padding: 4px 10px; border-radius: 4px; font-size: 14px;
 }
 .dpad {
-  margin-top: 40px;
   align-items: center;
 }
 .dpad-row {
   flex-direction: row;
 }
-.dpad-btn {
-  width: 140px;
-  height: 140px;
-  background-color: #222;
-  justify-content: center;
-  align-items: center;
-  margin: 12px;
-  border-radius: 30px;
+.btn {
+  width: 45px; height: 45px; background-color: #222; justify-content: center; align-items: center; margin: 2px; border-radius: 8px;
 }
 .empty {
   background-color: transparent;
 }
 .arrow {
-  color: #fff;
-  font-size: 70px;
+  color: #fff; font-size: 20px;
 }
-.settings {
-  width: 750px;
-  padding: 80px 0;
+.footer {
+  width: 172px;
+  flex: 1;
+  justify-content: flex-end;
+  padding-bottom: 20px;
   align-items: center;
 }
-.speed-bar {
-  flex-direction: row;
-  justify-content: center;
-  margin-bottom: 70px;
+.speed-row {
+  flex-direction: row; margin-bottom: 10px;
 }
 .speed-item {
-  padding: 20px 30px;
-  margin: 0 12px;
-  background-color: #1a1a1a;
-  color: #555;
-  font-size: 32px;
-  border-radius: 12px;
+  padding: 2px 6px; margin: 0 2px; background-color: #1a1a1a; color: #666; font-size: 10px; border-radius: 3px;
 }
-.speed-item-active {
-  background-color: #5fe89a;
-  color: #000;
+.speed-active {
+  background-color: #5fe89a; color: #000;
 }
-.action-bar {
+.action-row {
   flex-direction: row;
-  justify-content: center;
 }
-.action-btn {
-  background-color: #333;
-  color: #fff;
-  padding: 25px 80px;
-  margin: 0 25px;
-  border-radius: 60px;
-  font-size: 36px;
-  font-weight: 900;
+.act-btn {
+  background-color: #333; color: #fff; padding: 6px 12px; margin: 0 5px; border-radius: 12px; font-size: 12px;
 }
 </style>
