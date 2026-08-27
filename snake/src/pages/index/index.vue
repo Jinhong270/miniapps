@@ -1,13 +1,13 @@
 <template>
   <div class="app-container">
     <div class="header">
-      <div class="score-row">
-        <text class="label">分数:</text>
-        <text class="value">{{ score }}</text>
+      <div class="score-box">
+        <text class="score-label">SCORE</text>
+        <text class="score-value">{{ score }}</text>
       </div>
-      <div class="score-row">
-        <text class="label">最高:</text>
-        <text class="value">{{ bestScore }}</text>
+      <div class="score-box">
+        <text class="score-label">BEST</text>
+        <text class="score-value">{{ bestScore }}</text>
       </div>
     </div>
 
@@ -15,39 +15,39 @@
       <canvas ref="gameCanvas" class="canvas" @touchstart="onCanvasTouch"></canvas>
 
       <div v-if="gameState === 'idle'" class="overlay" @click="startGame">
-        <text class="overlay-btn">开始游戏</text>
+        <text class="overlay-btn">START GAME</text>
       </div>
 
       <div v-if="gameState === 'paused'" class="overlay" @click="resumeGame">
-        <text class="overlay-title">已暂停</text>
-        <text class="overlay-hint">点击继续</text>
+        <text class="overlay-title">PAUSED</text>
+        <text class="overlay-hint">Tap to Continue</text>
       </div>
 
       <div v-if="gameState === 'gameover'" class="overlay" @click="startGame">
-        <text class="overlay-title">游戏结束</text>
-        <text class="overlay-score">得分: {{ score }}</text>
-        <text class="overlay-btn">再来一局</text>
+        <text class="overlay-title">GAME OVER</text>
+        <text class="overlay-score">SCORE: {{ score }}</text>
+        <text class="overlay-btn">RESTART</text>
       </div>
     </div>
 
     <div class="dpad">
       <div class="dpad-row">
         <div class="dpad-btn" @touchstart="changeDir(0, -1)">
-          <text class="arrow">↑</text>
+          <text class="arrow">▲</text>
         </div>
       </div>
       <div class="dpad-row">
         <div class="dpad-btn" @touchstart="changeDir(-1, 0)">
-          <text class="arrow">←</text>
+          <text class="arrow">◀</text>
         </div>
         <div class="dpad-btn empty"></div>
         <div class="dpad-btn" @touchstart="changeDir(1, 0)">
-          <text class="arrow">→</text>
+          <text class="arrow">▶</text>
         </div>
       </div>
       <div class="dpad-row">
         <div class="dpad-btn" @touchstart="changeDir(0, 1)">
-          <text class="arrow">↓</text>
+          <text class="arrow">▼</text>
         </div>
       </div>
     </div>
@@ -62,8 +62,8 @@
         >{{ s.label }}</text>
       </div>
       <div class="action-btns">
-        <text class="ctrl-btn" @click="togglePause">{{ gameState === 'paused' ? '继续' : '暂停' }}</text>
-        <text class="ctrl-btn" @click="startGame">重开</text>
+        <text class="ctrl-btn" @click="togglePause">{{ gameState === 'paused' ? 'RESUME' : 'PAUSE' }}</text>
+        <text class="ctrl-btn" @click="startGame">RESET</text>
       </div>
     </div>
   </div>
@@ -78,10 +78,10 @@ export default {
       bestScore: 0,
       moveInterval: 130,
       speeds: [
-        { label: '慢', value: 180 },
-        { label: '中', value: 130 },
-        { label: '快', value: 90 },
-        { label: '极', value: 60 }
+        { label: 'SLOW', value: 180 },
+        { label: 'NORM', value: 130 },
+        { label: 'FAST', value: 90 },
+        { label: 'MAX', value: 60 }
       ],
       cols: 20,
       rows: 20,
@@ -92,7 +92,7 @@ export default {
       food: null,
       particles: [],
       lastMoveTime: 0,
-      canvasSize: 160,
+      canvasSize: 680,
       ctx: null,
       bestScoresMap: {},
       isLooping: false
@@ -111,10 +111,9 @@ export default {
     initCanvas() {
       const canvas = this.$refs.gameCanvas;
       this.ctx = canvas.getContext('2d');
-      const dpr = 2;
-      canvas.width = this.canvasSize * dpr;
-      canvas.height = this.canvasSize * dpr;
-      this.ctx.scale(dpr, dpr);
+      const dpr = 1;
+      canvas.width = this.canvasSize;
+      canvas.height = this.canvasSize;
     },
     loadBestScores() {
       try {
@@ -255,7 +254,7 @@ export default {
       ctx.fillStyle = '#0b0b0b';
       ctx.fillRect(0, 0, size, size);
       ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-      ctx.lineWidth = 0.5;
+      ctx.lineWidth = 1;
       for (let i = 0; i <= this.cols; i++) {
         ctx.beginPath(); ctx.moveTo(i * grid, 0); ctx.lineTo(i * grid, size); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i * grid); ctx.lineTo(size, i * grid); ctx.stroke();
@@ -323,143 +322,140 @@ export default {
 
 <style lang="less" scoped>
 .app-container {
-  width: 172px;
-  height: 640px;
+  width: 750px;
   background-color: #000;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 .header {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom-width: 1px;
+  width: 750px;
+  flex-direction: row;
+  justify-content: space-around;
+  padding: 40px 0;
+  border-bottom-width: 2px;
   border-bottom-style: solid;
   border-bottom-color: #222;
 }
-.score-row {
-  display: flex;
-  flex-direction: row;
+.score-box {
+  background-color: #1a1a1a;
+  padding: 20px;
+  border-radius: 12px;
+  width: 300px;
   align-items: center;
-  margin: 2px 0;
 }
-.label {
-  font-size: 14px;
-  color: #555;
-  margin-right: 5px;
-}
-.value {
-  font-size: 18px;
-  color: #fff;
+.score-label {
+  font-size: 24px;
+  color: #888;
   font-weight: bold;
+}
+.score-value {
+  font-size: 48px;
+  color: #fff;
+  font-weight: 800;
+  margin-top: 10px;
 }
 .game-stage {
   position: relative;
-  width: 160px;
-  height: 160px;
-  margin: 20px 0;
-  border-width: 1px;
+  width: 680px;
+  height: 680px;
+  margin: 60px 0;
+  border-width: 4px;
   border-style: solid;
   border-color: #333;
+  border-radius: 16px;
 }
 .canvas {
-  width: 160px;
-  height: 160px;
+  width: 680px;
+  height: 680px;
 }
 .overlay {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
+  top: 0; left: 0; width: 680px; height: 680px;
   background-color: rgba(0,0,0,0.8);
-  display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
 }
 .overlay-title {
   color: #fff;
-  font-size: 18px;
-  margin-bottom: 10px;
+  font-size: 60px;
+  font-weight: 800;
+  margin-bottom: 20px;
 }
 .overlay-score {
   color: #5fe89a;
-  font-size: 14px;
-  margin-bottom: 15px;
+  font-size: 40px;
+  margin-bottom: 40px;
 }
 .overlay-btn {
   background-color: #5fe89a;
   color: #000;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 20px 40px;
+  border-radius: 12px;
+  font-size: 32px;
+  font-weight: bold;
 }
 .overlay-hint {
   color: #666;
-  font-size: 10px;
-  margin-top: 8px;
+  font-size: 24px;
+  margin-top: 20px;
 }
 .dpad {
-  display: flex;
-  flex-direction: column;
+  margin-top: 40px;
   align-items: center;
 }
 .dpad-row {
-  display: flex;
+  flex-direction: row;
 }
 .dpad-btn {
-  width: 46px;
-  height: 46px;
-  background-color: #1a1a1a;
-  display: flex;
+  width: 120px;
+  height: 120px;
+  background-color: #222;
   justify-content: center;
   align-items: center;
-  margin: 2px;
-  border-radius: 8px;
+  margin: 10px;
+  border-radius: 20px;
 }
 .empty {
   background-color: transparent;
 }
 .arrow {
   color: #fff;
-  font-size: 20px;
+  font-size: 60px;
 }
 .footer {
-  width: 100%;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding-bottom: 40px;
+  width: 750px;
+  padding: 60px 0;
+  align-items: center;
 }
 .speed-selector {
-  display: flex;
+  flex-direction: row;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 60px;
 }
 .speed-btn {
-  padding: 3px 6px;
-  margin: 0 3px;
-  background-color: #1a1a1a;
-  color: #444;
-  font-size: 10px;
-  border-radius: 3px;
+  padding: 15px 25px;
+  margin: 0 10px;
+  background-color: #222;
+  color: #666;
+  font-size: 24px;
+  border-radius: 8px;
 }
 .speed-btn-active {
   background-color: #5fe89a;
   color: #000;
 }
 .action-btns {
-  display: flex;
+  flex-direction: row;
   justify-content: center;
 }
 .ctrl-btn {
-  background-color: #222;
-  color: #888;
-  padding: 6px 16px;
-  margin: 0 8px;
-  border-radius: 15px;
-  font-size: 12px;
+  background-color: #333;
+  color: #fff;
+  padding: 20px 60px;
+  margin: 0 20px;
+  border-radius: 50px;
+  font-size: 28px;
+  font-weight: bold;
 }
 </style>
