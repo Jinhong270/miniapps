@@ -2,11 +2,11 @@
   <div class="app-container">
     <div class="header">
       <div class="score-card">
-        <text class="label">SCORE</text>
+        <text class="label">当前分数</text>
         <text class="value">{{ score }}</text>
       </div>
-      <div class="score-card best">
-        <text class="label">BEST</text>
+      <div class="score-card">
+        <text class="label">最高纪录</text>
         <text class="value">{{ bestScore }}</text>
       </div>
     </div>
@@ -15,11 +15,11 @@
       <div class="canvas-frame">
         <canvas ref="gameCanvas" class="canvas" @touchstart="onCanvasTouch"></canvas>
         <div v-if="gameState !== 'playing'" class="overlay" @touchstart="onOverlayTouch">
-          <text v-if="gameState === 'idle'" class="ov-btn">START GAME</text>
-          <text v-if="gameState === 'paused'" class="ov-title">PAUSED</text>
-          <text v-if="gameState === 'gameover'" class="ov-title">GAME OVER</text>
-          <text v-if="gameState === 'gameover'" class="ov-score">SCORE: {{ score }}</text>
-          <text v-if="gameState !== 'idle'" class="ov-btn">CONTINUE</text>
+          <text v-if="gameState === 'idle'" class="ov-btn">开始游戏</text>
+          <text v-if="gameState === 'paused'" class="ov-title">已暂停</text>
+          <text v-if="gameState === 'gameover'" class="ov-title">游戏结束</text>
+          <text v-if="gameState === 'gameover'" class="ov-score">得分: {{ score }}</text>
+          <text v-if="gameState !== 'idle'" class="ov-btn">继续游戏</text>
         </div>
       </div>
     </div>
@@ -27,21 +27,21 @@
     <div class="dpad">
       <div class="dpad-row">
         <div class="dpad-btn" @touchstart="changeDir(0, -1)">
-          <text class="dpad-icon">▲</text>
+          <text class="dpad-icon">↑</text>
         </div>
       </div>
       <div class="dpad-row">
         <div class="dpad-btn" @touchstart="changeDir(-1, 0)">
-          <text class="dpad-icon">◀</text>
+          <text class="dpad-icon">←</text>
         </div>
         <div class="dpad-btn empty"></div>
         <div class="dpad-btn" @touchstart="changeDir(1, 0)">
-          <text class="dpad-icon">▶</text>
+          <text class="dpad-icon">→</text>
         </div>
       </div>
       <div class="dpad-row">
         <div class="dpad-btn" @touchstart="changeDir(0, 1)">
-          <text class="dpad-icon">▼</text>
+          <text class="dpad-icon">↓</text>
         </div>
       </div>
     </div>
@@ -56,8 +56,8 @@
         >{{ s.label }}</text>
       </div>
       <div class="btn-group">
-        <text class="btn primary" @touchstart="startGame">{{ gameState === 'idle' ? 'START' : 'RESTART' }}</text>
-        <text class="btn secondary" @touchstart="togglePause">{{ gameState === 'paused' ? 'RESUME' : 'PAUSE' }}</text>
+        <text class="btn primary" @touchstart="startGame">{{ gameState === 'idle' ? '开始' : '重来' }}</text>
+        <text class="btn secondary" @touchstart="togglePause">{{ gameState === 'paused' ? '继续' : '暂停' }}</text>
       </div>
     </div>
   </div>
@@ -72,10 +72,10 @@ export default {
       bestScore: 0,
       moveInterval: 130,
       speeds: [
-        { label: 'SLOW', value: 180 },
-        { label: 'NORM', value: 130 },
-        { label: 'FAST', value: 90 },
-        { label: 'MAX', value: 60 }
+        { label: '慢速', value: 180 },
+        { label: '正常', value: 130 },
+        { label: '快速', value: 90 },
+        { label: '极速', value: 60 }
       ],
       cols: 16,
       rows: 16,
@@ -86,7 +86,7 @@ export default {
       food: null,
       particles: [],
       lastMoveTime: 0,
-      canvasSize: 640,
+      canvasSize: 160,
       ctx: null,
       bestScoresMap: {},
       isLooping: false
@@ -209,7 +209,7 @@ export default {
           vy: Math.sin(angle) * speed,
           life: 1,
           decay: 0.05,
-          size: 4
+          size: 2
         });
       }
     },
@@ -233,7 +233,7 @@ export default {
       const ctx = this.ctx; if (!ctx) return;
       const size = this.canvasSize; const grid = size / this.cols;
       ctx.fillStyle = '#081310'; ctx.fillRect(0, 0, size, size);
-      ctx.strokeStyle = 'rgba(95,232,154,0.08)'; ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(95,232,154,0.08)'; ctx.lineWidth = 0.5;
       for (let i = 0; i <= this.cols; i++) {
         ctx.beginPath(); ctx.moveTo(i * grid, 0); ctx.lineTo(i * grid, size); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i * grid); ctx.lineTo(size, i * grid); ctx.stroke();
@@ -242,7 +242,7 @@ export default {
         if (this.food) {
           ctx.fillStyle = '#ff7a59';
           const fPad = grid * 0.2;
-          this.drawRoundRect(this.food.x * grid + fPad, this.food.y * grid + fPad, grid - fPad * 2, grid - fPad * 2, grid / 4);
+          this.drawRoundRect(this.food.x * grid + fPad, this.food.y * grid + fPad, grid - fPad * 2, grid - fPad * 2, 2);
           ctx.fill();
         }
         const t = this.gameState === 'playing' ? Math.min((ts - this.lastMoveTime) / this.moveInterval, 1) : 1;
@@ -251,7 +251,7 @@ export default {
           const ratio = renderSnake.length > 1 ? i / (renderSnake.length - 1) : 0;
           ctx.fillStyle = this.mixColor('#5fe89a', '#155c3b', ratio);
           const sPad = grid * 0.05;
-          this.drawRoundRect(seg.x * grid + sPad, seg.y * grid + sPad, grid - sPad * 2, grid - sPad * 2, grid / 4);
+          this.drawRoundRect(seg.x * grid + sPad, seg.y * grid + sPad, grid - sPad * 2, grid - sPad * 2, 2);
           ctx.fill();
         });
         this.particles.forEach(p => {
@@ -297,98 +297,94 @@ export default {
 
 <style scoped>
 .app-container {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 750px;
-  height: 2790px;
+  width: 172px;
+  height: 640px;
   background-color: #081310;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 .header {
-  width: 750px;
-  padding: 80px 0;
+  width: 172px;
+  padding: 15px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  border-bottom-width: 4px;
+  border-bottom-width: 1px;
   border-bottom-style: solid;
   border-bottom-color: #1a2a24;
 }
 .score-card {
   background-color: #11221c;
-  width: 500px;
-  padding: 30px;
-  margin: 15px 0;
-  border-radius: 24px;
-  border-width: 2px;
+  width: 140px;
+  padding: 5px 0;
+  margin: 2px 0;
+  border-radius: 8px;
+  border-width: 1px;
   border-style: solid;
   border-color: #5fe89a;
   align-items: center;
 }
 .label {
   color: #5fe89a;
-  font-size: 28px;
-  font-weight: bold;
+  font-size: 10px;
 }
 .value {
   color: #fff;
-  font-size: 64px;
-  font-weight: 900;
-  margin-top: 10px;
+  font-size: 16px;
+  font-weight: bold;
 }
 .stage {
-  margin: 100px 0;
-  width: 680px;
-  height: 680px;
+  margin: 15px 0;
+  width: 160px;
+  height: 160px;
   align-items: center;
   justify-content: center;
 }
 .canvas-frame {
   position: relative;
-  width: 640px;
-  height: 640px;
-  border-width: 8px;
+  width: 160px;
+  height: 160px;
+  border-width: 2px;
   border-style: solid;
   border-color: #1a2a24;
-  border-radius: 32px;
+  border-radius: 8px;
   overflow: hidden;
 }
 .canvas {
-  width: 640px;
-  height: 640px;
+  width: 160px;
+  height: 160px;
 }
 .overlay {
   position: absolute;
-  top: 0; left: 0; width: 640px; height: 640px;
+  top: 0; left: 0; width: 160px; height: 160px;
   background-color: rgba(8, 19, 16, 0.9);
   justify-content: center;
   align-items: center;
 }
 .ov-title {
-  color: #fff; font-size: 72px; font-weight: 900; margin-bottom: 40px;
+  color: #fff; font-size: 18px; font-weight: bold; margin-bottom: 10px;
 }
 .ov-score {
-  color: #5fe89a; font-size: 56px; margin-bottom: 60px;
+  color: #5fe89a; font-size: 14px; margin-bottom: 15px;
 }
 .ov-btn {
-  background-color: #5fe89a; color: #081310; padding: 30px 60px; border-radius: 20px; font-size: 40px; font-weight: 900;
+  background-color: #5fe89a; color: #081310; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold;
 }
 .dpad {
-  margin-top: 60px;
+  margin-top: 10px;
   align-items: center;
 }
 .dpad-row {
   flex-direction: row;
 }
 .dpad-btn {
-  width: 160px;
-  height: 160px;
+  width: 45px;
+  height: 45px;
   background-color: #1a2a24;
-  margin: 20px;
-  border-radius: 40px;
-  border-width: 4px;
+  margin: 4px;
+  border-radius: 10px;
+  border-width: 1px;
   border-style: solid;
   border-color: #5fe89a;
   justify-content: center;
@@ -399,20 +395,20 @@ export default {
   border-width: 0;
 }
 .dpad-icon {
-  color: #5fe89a; font-size: 64px; font-weight: bold;
+  color: #5fe89a; font-size: 20px; font-weight: bold;
 }
 .footer {
-  width: 750px;
+  width: 172px;
   flex: 1;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
-  padding-bottom: 150px;
+  padding-bottom: 30px;
 }
 .speed-selector {
-  flex-direction: row; margin-bottom: 80px;
+  flex-direction: row; margin-bottom: 15px;
 }
 .speed-btn {
-  padding: 20px 30px; margin: 0 15px; background-color: #1a2a24; color: #555; font-size: 32px; border-radius: 12px;
+  padding: 3px 6px; margin: 0 3px; background-color: #1a2a24; color: #555; font-size: 10px; border-radius: 4px;
 }
 .active {
   background-color: #5fe89a; color: #081310;
@@ -421,12 +417,12 @@ export default {
   flex-direction: row;
 }
 .btn {
-  padding: 30px 60px; margin: 0 30px; border-radius: 50px; font-size: 36px; font-weight: 900;
+  padding: 8px 16px; margin: 0 8px; border-radius: 20px; font-size: 12px; font-weight: bold;
 }
 .primary {
   background-color: #5fe89a; color: #081310;
 }
 .secondary {
-  background-color: #1a2a24; color: #5fe89a; border-width: 2px; border-style: solid; border-color: #5fe89a;
+  background-color: #1a2a24; color: #5fe89a; border-width: 1px; border-style: solid; border-color: #5fe89a;
 }
 </style>
